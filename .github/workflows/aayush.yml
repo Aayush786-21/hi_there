@@ -1,0 +1,42 @@
+name: Aayush
+
+on: 
+  push:
+    branches:
+        - main
+
+jobs:
+  deploymycode:
+    name: Deploy my code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+      - name: ssh into server
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+          cat ~/.ssh/config
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          SERVER_IP: ${{ vars.SERVER_IP }}
+      - name: ssh key access
+        run: |
+          touch mykey.pem
+          echo $SSH_KEY64 | base64 -d > mykey.pem
+          chmod 400 mykey.pem
+          ssh-keygen -R $SERVER_IP
+        env:
+          SSH_KEY64: ${{ secrets.SSH_KEY64 }}
+          SERVER_IP: ${{ vars.SERVER_IP }}
+      - name: "deploy code"
+        run: |
+          ssh -t ubuntu@$SERVER_IP -i mykey.pem 'cd /var/www/html && git pull origin main'
+        env:
+          SERVER_IP: ${{ vars.SERVER_IP }}
+        
+            

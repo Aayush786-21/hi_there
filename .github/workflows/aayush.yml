@@ -1,42 +1,34 @@
-name: Aayush
-
-on: 
+name: "Update index.html in the server"
+on:
   push:
     branches:
-        - main
-
+      - main
 jobs:
-  deploymycode:
-    name: Deploy my code
+  deploy_my_code:
+    name: "Deploy code in the server"
     runs-on: ubuntu-latest
+    env:
+      SERVER_IP: ${{ vars.SERVER_IP }}
     steps:
-      - name: Checkout code
+      - name: "Checkingout the code"
         uses: actions/checkout@v4
         with:
-            fetch-depth: 0
-      - name: ssh into server
+          fetch-depth: 0
+      - name: "Configure ssh"
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null" > ~/.ssh/config
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
           cat ~/.ssh/config
           touch ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
-        env:
-          SERVER_IP: ${{ vars.SERVER_IP }}
-      - name: ssh key access
+      - name: "Make ssh connection"
         run: |
           touch mykey.pem
-          echo $SSH_KEY64 | base64 -d > mykey.pem
-          chmod 400 mykey.pem
+          echo $SSH_KEY64 | base64 -d > mykey.pem  && chmod 400 mykey.pem
           ssh-keygen -R $SERVER_IP
         env:
           SSH_KEY64: ${{ secrets.SSH_KEY64 }}
-          SERVER_IP: ${{ vars.SERVER_IP }}
-      - name: "deploy code"
+      - name: "Deploy the code to my server"
         run: |
-          ssh -t ubuntu@$SERVER_IP -i mykey.pem 'cd /var/www/html && git pull origin main'
-        env:
-          SERVER_IP: ${{ vars.SERVER_IP }}
-        
-            
+          ssh -t ubuntu@$SERVER_IP -i mykey.pem  'cd /var/www/html && git pull origin main'
